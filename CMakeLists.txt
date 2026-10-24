@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Inclui JUCE via FetchContent na versão 7.0.12 (compatível com macOS e Windows recentes)
+set(JUCE_BUILD_HELPER_TOOLS OFF CACHE BOOL "" FORCE)
+set(JUCE_BUILD_EXTRAS OFF CACHE BOOL "" FORCE)
 include(FetchContent)
 FetchContent_Declare(
     JUCE
@@ -16,17 +18,18 @@ FetchContent_MakeAvailable(JUCE)
 
 juce_add_plugin(Electribe2Hacktribe
     COMPANY_NAME "HacktribeAudio"
-    IS_SYNTH TRUE
+    IS_SYNTH FALSE
     NEEDS_MIDI_INPUT TRUE
     NEEDS_MIDI_OUTPUT TRUE
     IS_MIDI_EFFECT FALSE
     EDITOR_WANTS_KEYBOARD_FOCUS TRUE
-    COPY_PLUGIN_AFTER_BUILD FALSE
-    PLUGIN_MANUFACTURER_CODE HACK
-    PLUGIN_CODE E2HK
-    FORMATS VST3 AU Standalone
-    PRODUCT_NAME "Electribe 2 Hacktribe"
+    PLUGIN_MANUFACTURER_CODE Hktb
+    PLUGIN_CODE E2hk
+    FORMATS VST3 AU
+    PRODUCT_NAME "Electribe2Hacktribe"
 )
+
+juce_generate_juce_header(Electribe2Hacktribe)
 
 target_sources(Electribe2Hacktribe
     PRIVATE
@@ -44,10 +47,6 @@ target_compile_definitions(Electribe2Hacktribe
 target_link_libraries(Electribe2Hacktribe
     PRIVATE
         juce::juce_audio_utils
-        juce::juce_audio_processors
-        juce::juce_dsp
-        juce::juce_gui_basics
-        juce::juce_gui_extra
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags
