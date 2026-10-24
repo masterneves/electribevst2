@@ -39,7 +39,7 @@ jobs:
 
     - name: Configure CMake (macOS)
       if: runner.os == 'macOS'
-      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+      run: cmake -B build -G Xcode -DCMAKE_BUILD_TYPE=Release -DJUCE_BUILD_HELPER_TOOLS=OFF
 
     - name: Build Plugin
       run: cmake --build build --config Release
