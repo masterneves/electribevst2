@@ -12,7 +12,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, macos-13]
+        os: [windows-latest, macos-latest]
 
     steps:
     - name: Checkout repository
@@ -33,10 +33,10 @@ jobs:
         cmake-version: '3.22.x'
 
     - name: Configure CMake
-      run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DJUCE_BUILD_HELPER_TOOLS=OFF
 
     - name: Build Plugin
-      run: cmake --build build --config Release
+      run: cmake --build build --target Electribe2Hacktribe_VST3 Electribe2Hacktribe_Standalone --config Release
 
     - name: Upload Artifacts (Windows)
       if: runner.os == 'Windows'
