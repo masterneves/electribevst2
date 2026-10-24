@@ -1,4 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
+
+# Define as linguagens no projeto depois do cmake_minimum_required
 project(Electribe2Hacktribe VERSION 1.0.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -20,7 +22,7 @@ juce_add_plugin(Electribe2Hacktribe
     NEEDS_MIDI_OUTPUT TRUE
     IS_MIDI_EFFECT FALSE
     EDITOR_WANTS_KEYBOARD_FOCUS TRUE
-    COPY_PLUGIN_AFTER_BUILD TRUE
+    COPY_PLUGIN_AFTER_BUILD FALSE
     PLUGIN_MANUFACTURER_CODE HACK
     PLUGIN_CODE E2HK
     FORMATS VST3 AU Standalone
