@@ -1,18 +1,7 @@
 #pragma once
 
-#include <JuceHeader.h>
-
-namespace HacktribeParams
-{
-    static constexpr int NUM_TRACKS = 16;
-    static constexpr int NUM_STEPS = 64;
-}
-
-enum class TrackMode
-{
-    Synth = 0,
-    Sample
-};
+#include <juce_audio_processors/juce_audio_processors.h>
+#include <juce_dsp/juce_dsp.h>
 
 class Electribe2HacktribeAudioProcessor  : public juce::AudioProcessor
 {
@@ -28,41 +17,29 @@ public:
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
 
     juce::AudioProcessorEditor* createEditor() override;
-    bool hasEditor() const override { return true; }
+    bool hasEditor() const override;
 
-    const juce::String getName() const override { return JucePlugin_Name; }
+    const juce::String getName() const override;
 
-    bool acceptsMidi() const override { return true; }
-    bool producesMidi() const override { return true; }
-    bool isMidiEffect() const override { return false; }
-    double getTailLengthSeconds() const override { return 0.0; }
+    bool acceptsMidi() const override;
+    bool producesMidi() const override;
+    bool isMidiEffect() const override;
+    double getTailLengthSeconds() const override;
 
-    int getNumPrograms() override { return 1; }
-    int getCurrentProgram() override { return 0; }
-    void setCurrentProgram (int) override {}
-    const juce::String getProgramName (int) override { return "Default"; }
-    void changeProgramName (int, const juce::String&) override {}
+    int getNumPrograms() override;
+    int getCurrentProgram() override;
+    void setCurrentProgram (int index) override;
+    const juce::String getProgramName (int index) override;
+    void changeProgramName (int index, const juce::String& newName) override;
 
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
-    juce::AudioProcessorValueTreeState& getAPVTS() { return apvts; }
-    int getCurrentStep() const { return currentStep.load(); }
+    juce::AudioProcessorValueTreeState apvts;
 
 private:
-    juce::AudioProcessorValueTreeState apvts;
+    juce::dsp::StateVariableTPTFilter<float> filter;
     juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
-
-    juce::Synthesiser synthEngine;
-    
-    std::atomic<int> currentStep { 0 };
-    double currentSampleRate { 44100.0 };
-    double bpm { 120.0 };
-    juce::int64 samplesPerStep { 0 };
-    juce::int64 stepSampleCounter { 0 };
-
-    void updateSequencerTiming(double newBpm);
-    void triggerStep(int step, juce::MidiBuffer& midiOutput);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Electribe2HacktribeAudioProcessor)
 };
