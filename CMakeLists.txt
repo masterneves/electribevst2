@@ -1,20 +1,19 @@
 cmake_minimum_required(VERSION 3.22)
 
-# Desativa explicitamente as ferramentas auxiliares e extras do JUCE antes de declarar o projeto
-set(JUCE_BUILD_HELPER_TOOLS OFF CACHE BOOL "" FORCE)
-set(JUCE_BUILD_EXTRAS OFF CACHE BOOL "" FORCE)
-set(JUCE_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-
 project(Electribe2Hacktribe VERSION 1.0.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Força o desligamento de extras antes do FetchContent
+set(JUCE_BUILD_HELPER_TOOLS OFF CACHE BOOL "" FORCE)
+set(JUCE_BUILD_EXTRAS OFF CACHE BOOL "" FORCE)
+
 include(FetchContent)
 FetchContent_Declare(
     JUCE
     GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
-    GIT_TAG        8.0.0 # <--- Atualizar para o JUCE 8 remove completamente a incompatibilidade de compilação do juceaide em macOS recentes
+    GIT_TAG        7.0.12
 )
 FetchContent_MakeAvailable(JUCE)
 
