@@ -38,7 +38,7 @@ jobs:
         cmake-version: '3.22.x'
 
     - name: Configure CMake
-      run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DJUCE_BUILD_HELPER_TOOLS=OFF
+      run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DJUCE_BUILD_HELPER_TOOLS=OFF -DJUCE_ENABLE_MODULE_SOURCE_GROUPS=OFF
 
     - name: Build Plugin
       run: cmake --build build --config Release
