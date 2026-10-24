@@ -1,10 +1,9 @@
 #pragma once
 
-#include <JuceHeader.h>
+#include <juce_gui_extra/juce_gui_extra.h>
 #include "PluginProcessor.h"
 
-class Electribe2HacktribeAudioProcessorEditor  : public juce::AudioProcessorEditor,
-                                                  private juce::Timer
+class Electribe2HacktribeAudioProcessorEditor  : public juce::AudioProcessorEditor
 {
 public:
     Electribe2HacktribeAudioProcessorEditor (Electribe2HacktribeAudioProcessor&);
@@ -12,15 +11,13 @@ public:
 
     void paint (juce::Graphics&) override;
     void resized() override;
-    void timerCallback() override;
 
 private:
     Electribe2HacktribeAudioProcessor& audioProcessor;
 
-    juce::TextButton pads[16];
     juce::Slider cutoffSlider;
     juce::Slider resonanceSlider;
-    juce::ComboBox trackModeSelector;
+    juce::ComboBox modeSelector;
 
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> cutoffAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> resonanceAttachment;
