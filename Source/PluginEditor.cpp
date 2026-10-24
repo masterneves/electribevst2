@@ -4,91 +4,49 @@
 Electribe2HacktribeAudioProcessorEditor::Electribe2HacktribeAudioProcessorEditor (Electribe2HacktribeAudioProcessor& p)
     : AudioProcessorEditor (&p), audioProcessor (p)
 {
-    setSize (900, 550);
+    setSize (600, 400);
 
-    for (int i = 0; i < 16; ++i)
-    {
-        pads[i].setButtonText(juce::String(i + 1));
-        pads[i].setColour(juce::TextButton::buttonColourId, juce::Colour(0xff2a2a2a));
-        pads[i].setColour(juce::TextButton::textColourOffId, juce::Colours::white);
-        addAndMakeVisible(pads[i]);
-    }
+    // Cutoff Slider
+    cutoffSlider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
+    cutoffSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 50, 20);
+    addAndMakeVisible (cutoffSlider);
+    cutoffAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.apvts, "CUTOFF", cutoffSlider);
 
-    cutoffSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    cutoffSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
-    addAndMakeVisible(cutoffSlider);
+    // Resonance Slider
+    resonanceSlider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
+    resonanceSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 50, 20);
+    addAndMakeVisible (resonanceSlider);
+    resonanceAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.apvts, "RESONANCE", resonanceSlider);
 
-    resonanceSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    resonanceSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
-    addAndMakeVisible(resonanceSlider);
-
-    trackModeSelector.addItem("Synth Engine", 1);
-    trackModeSelector.addItem("User Sampler", 2);
-    addAndMakeVisible(trackModeSelector);
-
-    cutoffAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-        audioProcessor.getAPVTS(), "TRK_1_CUTOFF", cutoffSlider);
-    resonanceAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-        audioProcessor.getAPVTS(), "TRK_1_RESONANCE", resonanceSlider);
-    modeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
-        audioProcessor.getAPVTS(), "TRK_1_MODE", trackModeSelector);
-
-    startTimerHz(30);
+    // Mode Selector
+    modeSelector.addItem ("Low Pass", 1);
+    modeSelector.addItem ("High Pass", 2);
+    modeSelector.addItem ("Band Pass", 3);
+    addAndMakeVisible (modeSelector);
+    modeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (audioProcessor.apvts, "FILTER_MODE", modeSelector);
 }
 
 Electribe2HacktribeAudioProcessorEditor::~Electribe2HacktribeAudioProcessorEditor()
 {
-    stopTimer();
 }
 
 void Electribe2HacktribeAudioProcessorEditor::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colour (0xff1e1e24));
+    g.fillAll (juce::Colours::darkgrey);
 
-    g.setColour (juce::Colours::cyan);
-    g.setFont (22.0f);
-    g.drawFittedText ("KORG ELECTRIBE 2 - HACKTRIBE OS VST", getLocalBounds().removeFromTop(40), juce::Justification::centred, 1);
+    g.setColour (juce::Colours::white);
+    g.setFont (18.0f);
+    g.drawFittedText ("Electribe 2 / Hacktribe VST", getLocalBounds().removeFromTop(40), juce::Justification::centred, 1);
 }
 
 void Electribe2HacktribeAudioProcessorEditor::resized()
 {
     auto area = getLocalBounds().reduced(20);
-    area.removeFromTop(40);
+    area.removeFromTop(40); // Espaço para o título
 
-    auto controlArea = area.removeFromTop(120);
-    trackModeSelector.setBounds(controlArea.removeFromLeft(150).withHeight(30));
-    cutoffSlider.setBounds(controlArea.removeFromLeft(100).withHeight(100));
-    resonanceSlider.setBounds(controlArea.removeFromLeft(100).withHeight(100));
+    auto sliderArea = area.removeFromTop(150);
+    cutoffSlider.setBounds (sliderArea.removeFromLeft(150));
+    resonanceSlider.setBounds (sliderArea.removeFromLeft(150));
 
-    area.removeFromTop(20);
-
-    auto padArea = area.removeFromTop(200);
-    int padWidth = padArea.getWidth() / 8;
-    int padHeight = 80;
-
-    for (int i = 0; i < 16; ++i)
-    {
-        int row = i / 8;
-        int col = i % 8;
-        pads[i].setBounds(padArea.getX() + col * padWidth + 4, 
-                           padArea.getY() + row * (padHeight + 10), 
-                           padWidth - 8, padHeight);
-    }
-}
-
-void Electribe2HacktribeAudioProcessorEditor::timerCallback()
-{
-    int currentStep = audioProcessor.getCurrentStep();
-    
-    for (int i = 0; i < 16; ++i)
-    {
-        if (i == (currentStep % 16))
-        {
-            pads[i].setColour(juce::TextButton::buttonColourId, juce::Colours::red);
-        }
-        else
-        {
-            pads[i].setColour(juce::TextButton::buttonColourId, juce::Colour(0xff2a2a2a));
-        }
-    }
+    modeSelector.setBounds (area.removeFromTop(30).withSizeKeepingCentre(150, 30));
 }
