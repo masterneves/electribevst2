@@ -20,37 +20,32 @@ Electribe2HacktribeAudioProcessor::~Electribe2HacktribeAudioProcessor()
 {
 }
 
-juce::AudioProcessorValueTreeState::ParameterLayout Electribe2HacktribeAudioProcessor::createParameterLayout()
+const juce::String Electribe2HacktribeAudioProcessor::getName() const
 {
-    std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
-
-    for (int i = 0; i < HacktribeParams::NUM_TRACKS; ++i)
-    {
-        juce::String prefix = "TRK_" + juce::String(i + 1) + "_";
-
-        params.push_back(std::make_unique<juce::AudioParameterChoice>(
-            prefix + "MODE", "Track " + juce::String(i + 1) + " Mode",
-            juce::StringArray{ "Synth Engine", "User Sampler" }, 0));
-
-        params.push_back(std::make_unique<juce::AudioParameterFloat>(prefix + "CUTOFF", "Cutoff", 20.0f, 20000.0f, 10000.0f));
-        params.push_back(std::make_unique<juce::AudioParameterFloat>(prefix + "RESONANCE", "Resonance", 0.0f, 1.0f, 0.1f));
-        params.push_back(std::make_unique<juce::AudioParameterFloat>(prefix + "ATTACK", "Attack", 0.001f, 5.0f, 0.01f));
-        params.push_back(std::make_unique<juce::AudioParameterFloat>(prefix + "DECAY", "Decay", 0.01f, 10.0f, 0.5f));
-        params.push_back(std::make_unique<juce::AudioParameterFloat>(prefix + "PAN", "Pan", -1.0f, 1.0f, 0.0f));
-        params.push_back(std::make_unique<juce::AudioParameterFloat>(prefix + "LEVEL", "Level", 0.0f, 1.0f, 0.8f));
-    }
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>("MASTER_FX_X", "Master FX X", 0.0f, 1.0f, 0.5f));
-    params.push_back(std::make_unique<juce::AudioParameterFloat>("MASTER_FX_Y", "Master FX Y", 0.0f, 1.0f, 0.5f));
-
-    return { params.begin(), params.end() };
+    return JucePlugin_Name;
 }
+
+bool Electribe2HacktribeAudioProcessor::acceptsMidi() const { return true; }
+bool Electribe2HacktribeAudioProcessor::producesMidi() const { return true; }
+bool Electribe2HacktribeAudioProcessor::isMidiEffect() const { return false; }
+double Electribe2HacktribeAudioProcessor::getTailLengthSeconds() const { return 0.0; }
+
+int Electribe2HacktribeAudioProcessor::getNumPrograms() { return 1; }
+int Electribe2HacktribeAudioProcessor::getCurrentProgram() { return 0; }
+void Electribe2HacktribeAudioProcessor::setCurrentProgram (int index) {}
+const juce::String Electribe2HacktribeAudioProcessor::getProgramName (int index) { return {}; }
+void Electribe2HacktribeAudioProcessor::changeProgramName (int index, const juce::String& newName) {}
 
 void Electribe2HacktribeAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    currentSampleRate = sampleRate;
-    synthEngine.setCurrentPlaybackSampleRate(sampleRate);
-    updateSequencerTiming(bpm);
+    juce::dsp::ProcessSpec spec;
+    spec.sampleRate = sampleRate;
+    spec.maximumBlockSize = (juce::uint32) samplesPerBlock;
+    spec.numChannels = (juce::uint32) getTotalNumOutputChannels();
+
+    filter.reset();
+    filter.setType(juce::dsp::StateVariableTPTFilterType::lowpass);
+    filter.prepare(spec);
 }
 
 void Electribe2HacktribeAudioProcessor::releaseResources()
@@ -66,18 +61,6 @@ bool Electribe2HacktribeAudioProcessor::isBusesLayoutSupported (const BusesLayou
     return true;
 }
 
-void Electribe2HacktribeAudioProcessor::updateSequencerTiming(double newBpm)
-{
-    bpm = newBpm;
-    double secondsPerStep = (60.0 / bpm) / 4.0;
-    samplesPerStep = static_cast<juce::int64>(secondsPerStep * currentSampleRate);
-}
-
-void Electribe2HacktribeAudioProcessor::triggerStep(int step, juce::MidiBuffer& midiOutput)
-{
-    juce::ignoreUnused(step, midiOutput);
-}
-
 void Electribe2HacktribeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
@@ -87,29 +70,21 @@ void Electribe2HacktribeAudioProcessor::processBlock (juce::AudioBuffer<float>& 
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    if (auto* playHead = getPlayHead())
-    {
-        juce::AudioPlayHead::CurrentPositionInfo posInfo;
-        if (playHead->getCurrentPosition(posInfo))
-        {
-            if (posInfo.bpm > 0 && posInfo.bpm != bpm)
-                updateSequencerTiming(posInfo.bpm);
-        }
-    }
+    float cutoff = apvts.getRawParameterValue("TRK_1_CUTOFF")->load();
+    float resonance = apvts.getRawParameterValue("TRK_1_RESONANCE")->load();
 
-    int numSamples = buffer.getNumSamples();
-    for (int sample = 0; sample < numSamples; ++sample)
-    {
-        stepSampleCounter++;
-        if (stepSampleCounter >= samplesPerStep)
-        {
-            stepSampleCounter = 0;
-            currentStep = (currentStep + 1) % HacktribeParams::NUM_STEPS;
-            triggerStep(currentStep.load(), midiMessages);
-        }
-    }
+    filter.setCutoffFrequency(cutoff);
+    filter.setResonance(resonance);
 
-    synthEngine.renderNextBlock(buffer, midiMessages, 0, buffer.getNumSamples());
+    juce::dsp::AudioBlock<float> block(buffer);
+    juce::dsp::ProcessContextReplacing<float> context(block);
+    filter.process(context);
+}
+
+bool Electribe2HacktribeAudioProcessor::hasEditor() const { return true; }
+juce::AudioProcessorEditor* Electribe2HacktribeAudioProcessor::createEditor()
+{
+    return new Electribe2HacktribeAudioProcessorEditor (*this);
 }
 
 void Electribe2HacktribeAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
@@ -125,6 +100,25 @@ void Electribe2HacktribeAudioProcessor::setStateInformation (const void* data, i
     if (xmlState.get() != nullptr)
         if (xmlState->hasTagName (apvts.state.getType()))
             apvts.replaceState (juce::ValueTree::fromXml (*xmlState));
+}
+
+juce::AudioProcessorValueTreeState::ParameterLayout Electribe2HacktribeAudioProcessor::createParameterLayout()
+{
+    std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
+
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        "TRK_1_CUTOFF", "Track 1 Cutoff",
+        juce::NormalisableRange<float> (20.0f, 20000.0f, 1.0f, 0.3f), 20000.0f));
+
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        "TRK_1_RESONANCE", "Track 1 Resonance",
+        juce::NormalisableRange<float> (0.1f, 10.0f, 0.05f), 0.707f));
+
+    params.push_back (std::make_unique<juce::AudioParameterChoice> (
+        "TRK_1_MODE", "Track 1 Mode",
+        juce::StringArray { "Synth Engine", "User Sampler" }, 0));
+
+    return { params.begin(), params.end() };
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
