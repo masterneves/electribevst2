@@ -12,7 +12,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, macos-latest]
+        os: [windows-latest, macos-13]
 
     steps:
     - name: Checkout repository
@@ -24,10 +24,6 @@ jobs:
       if: runner.os == 'Windows'
       uses: ilammy/msvc-dev-cmd@v1
 
-    - name: Install Ninja (macOS)
-      if: runner.os == 'macOS'
-      run: brew install ninja
-
     - name: Install Ninja (Windows)
       if: runner.os == 'Windows'
       run: choco install ninja
@@ -37,8 +33,13 @@ jobs:
       with:
         cmake-version: '3.22.x'
 
-    - name: Configure CMake
-      run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DJUCE_BUILD_HELPER_TOOLS=OFF -DJUCE_ENABLE_MODULE_SOURCE_GROUPS=OFF
+    - name: Configure CMake (Windows)
+      if: runner.os == 'Windows'
+      run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+    - name: Configure CMake (macOS)
+      if: runner.os == 'macOS'
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
 
     - name: Build Plugin
       run: cmake --build build --config Release
