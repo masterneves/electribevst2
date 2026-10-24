@@ -24,8 +24,13 @@ jobs:
       if: runner.os == 'Windows'
       uses: ilammy/msvc-dev-cmd@v1
 
-    - name: Set up Ninja
-      uses: ninja-build/setup-ninja@v4
+    - name: Install Ninja (macOS)
+      if: runner.os == 'macOS'
+      run: brew install ninja
+
+    - name: Install Ninja (Windows)
+      if: runner.os == 'Windows'
+      run: choco install ninja
 
     - name: Set up CMake
       uses: jwlawson/actions-setup-cmake@v2
@@ -36,7 +41,7 @@ jobs:
       run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DJUCE_BUILD_HELPER_TOOLS=OFF
 
     - name: Build Plugin
-      run: cmake --build build --target Electribe2Hacktribe_VST3 Electribe2Hacktribe_Standalone --config Release
+      run: cmake --build build --config Release
 
     - name: Upload Artifacts (Windows)
       if: runner.os == 'Windows'
