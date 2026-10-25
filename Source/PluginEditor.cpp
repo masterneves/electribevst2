@@ -6,24 +6,23 @@ Electribe2HacktribeAudioProcessorEditor::Electribe2HacktribeAudioProcessorEditor
 {
     setSize (600, 400);
 
-    // Cutoff Slider
+    // Cutoff Slider (Corrigido para o ID exato do Processor)
     cutoffSlider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
     cutoffSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 50, 20);
     addAndMakeVisible (cutoffSlider);
-    cutoffAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.apvts, "CUTOFF", cutoffSlider);
+    cutoffAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.apvts, "TRK_1_CUTOFF", cutoffSlider);
 
-    // Resonance Slider
+    // Resonance Slider (Corrigido para o ID exato do Processor)
     resonanceSlider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
     resonanceSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 50, 20);
     addAndMakeVisible (resonanceSlider);
-    resonanceAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.apvts, "RESONANCE", resonanceSlider);
+    resonanceAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.apvts, "TRK_1_RESONANCE", resonanceSlider);
 
-    // Mode Selector
-    modeSelector.addItem ("Low Pass", 1);
-    modeSelector.addItem ("High Pass", 2);
-    modeSelector.addItem ("Band Pass", 3);
+    // Mode Selector (Corrigido para o ID exato do Processor)
+    modeSelector.addItem ("Synth Engine", 1);
+    modeSelector.addItem ("User Sampler", 2);
     addAndMakeVisible (modeSelector);
-    modeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (audioProcessor.apvts, "FILTER_MODE", modeSelector);
+    modeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (audioProcessor.apvts, "TRK_1_MODE", modeSelector);
 }
 
 Electribe2HacktribeAudioProcessorEditor::~Electribe2HacktribeAudioProcessorEditor()
