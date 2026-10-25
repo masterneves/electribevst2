@@ -15,7 +15,6 @@ Electribevst2AudioProcessor::Electribevst2AudioProcessor()
        apvts (*this, nullptr, "Parameters", createParameterLayout())
 #endif
 {
-    // Configuração da onda do oscilador (Onda dente de serra por defeito)
     osc.initialise ([] (float x) { return std::sin (x); });
 }
 
@@ -63,7 +62,7 @@ double Electribevst2AudioProcessor::getTailLengthSeconds() const
 
 int Electribevst2AudioProcessor::getNumPrograms()
 {
-    return 1;   // NB: some hosts choose to think 0 means 1
+    return 1;
 }
 
 int Electribevst2AudioProcessor::getCurrentProgram()
@@ -94,8 +93,6 @@ void Electribevst2AudioProcessor::prepareToPlay (double sampleRate, int samplesP
 
     osc.prepare (spec);
     filter.prepare (spec);
-
-    // Frequência de corte inicial do filtro TPT
     filter.setType (juce::dsp::StateVariableTPTFilterType::lowpass);
 }
 
@@ -133,14 +130,12 @@ void Electribevst2AudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    // Atualização dos parâmetros do APVTS
     auto cutoff = apvts.getRawParameterValue ("CUTOFF")->load();
     auto resonance = apvts.getRawParameterValue ("RESONANCE")->load();
 
     filter.setCutoffFrequency (cutoff);
     filter.setResonance (resonance);
 
-    // Processamento DSP correto
     juce::dsp::AudioBlock<float> block (buffer);
     juce::dsp::ProcessContextReplacing<float> context (block);
 
