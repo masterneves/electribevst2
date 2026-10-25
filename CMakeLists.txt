@@ -2,14 +2,14 @@ cmake_minimum_required(VERSION 3.22)
 
 project(electribevst2 VERSION 0.1.0)
 
-# Configuração do JUCE (ajusta se necessário a forma como tens o teu JUCE incluído)
-find_package(JUCE CONFIG REQUIRED)
+# Inclui a pasta do JUCE que é descarregada pelo GitHub Actions
+add_subdirectory(JUCE)
 
 juce_add_plugin(electribevst2
     COMPANY_NAME "MasterNeves"
     PLUGIN_NAME "Electribe2Hacktribe"
-    IS_SYNTH TRUE               # <--- Define que é um sintetizador (instrumento)
-    NEEDS_MIDI_INPUT TRUE       # <--- Permite receber notas MIDI do teclado
+    IS_SYNTH TRUE               # Define que é um sintetizador (instrumento)
+    NEEDS_MIDI_INPUT TRUE       # Permite receber notas MIDI do teclado
     NEEDS_MIDI_OUTPUT FALSE
     IS_MIDI_EFFECT FALSE
     EDITOR_WANTS_KEYBOARD_FOCUS TRUE
