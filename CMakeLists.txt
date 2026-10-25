@@ -1,19 +1,21 @@
 cmake_minimum_required(VERSION 3.22)
 
+# 1. Definir o projeto e a versão primeiro
 project(electribevst2 VERSION 0.1.0)
 
-# O JUCE 8 exige C++20 ativado obrigatoriamente
+# 2. Exigir C++20 para o JUCE 8
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Inclui a pasta do JUCE que é descarregada pelo GitHub Actions
+# 3. Adicionar o diretório do JUCE descarregado pelo GitHub Actions
 add_subdirectory(JUCE)
 
+# 4. Criar o plugin VST3/AU
 juce_add_plugin(electribevst2
     COMPANY_NAME "MasterNeves"
     PLUGIN_NAME "Electribe2Hacktribe"
-    IS_SYNTH TRUE               # Define que é um sintetizador (instrumento)
-    NEEDS_MIDI_INPUT TRUE       # Permite receber notas MIDI do teclado
+    IS_SYNTH TRUE
+    NEEDS_MIDI_INPUT TRUE
     NEEDS_MIDI_OUTPUT FALSE
     IS_MIDI_EFFECT FALSE
     EDITOR_WANTS_KEYBOARD_FOCUS TRUE
@@ -22,7 +24,7 @@ juce_add_plugin(electribevst2
     FORMATS VST3 AU
     PRODUCT_NAME "Electribe 2 Hacktribe")
 
-# Adição dos ficheiros fonte do projeto
+# 5. Adicionar os ficheiros fonte
 target_sources(electribevst2
     PRIVATE
         Source/PluginProcessor.cpp
@@ -30,14 +32,14 @@ target_sources(electribevst2
         Source/PluginEditor.cpp
         Source/PluginEditor.h)
 
-# Definições de compilação
+# 6. Definir flags de compilação
 target_compile_definitions(electribevst2
     PUBLIC
         JUCE_WEB_BROWSER=0
         JUCE_USE_CURL=0
         JUCE_VST3_CAN_REPLACE_VST2=0)
 
-# Dependências dos módulos do JUCE necessários
+# 7. Ligar as bibliotecas e módulos do JUCE
 target_link_libraries(electribevst2
     PRIVATE
         juce::juce_audio_utils
