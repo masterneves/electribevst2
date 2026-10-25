@@ -3,16 +3,18 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_dsp/juce_dsp.h>
 
-class Electribe2HacktribeAudioProcessor  : public juce::AudioProcessor
+class Electribevst2AudioProcessor  : public juce::AudioProcessor
 {
 public:
-    Electribe2HacktribeAudioProcessor();
-    ~Electribe2HacktribeAudioProcessor() override;
+    Electribevst2AudioProcessor();
+    ~Electribevst2AudioProcessor() override;
 
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
 
+   #ifndef JucePlugin_PreferredChannelConfigurations
     bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
+   #endif
 
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
 
@@ -38,14 +40,10 @@ public:
     juce::AudioProcessorValueTreeState apvts;
 
 private:
+    juce::dsp::Oscillator<float> osc;
     juce::dsp::StateVariableTPTFilter<float> filter;
-    
-    // Oscilador simples e variáveis de controlo MIDI
-    juce::dsp::Oscillator<float> oscillator { [] (float x) { return std::sin (x); }, 200 };
-    double currentSampleRate = 44100.0;
-    bool isPlaying = false;
 
-    juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
+    static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Electribe2HacktribeAudioProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Electribevst2AudioProcessor)
 };
