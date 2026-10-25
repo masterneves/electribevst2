@@ -28,11 +28,11 @@ jobs:
 
     - name: Configure CMake (Windows)
       if: runner.os == 'Windows'
-      run: cmake -B build -DCMAKE_PREFIX_PATH="${{ github.workspace }}/JUCE"
+      run: cmake -B build
 
     - name: Configure CMake (macOS)
       if: runner.os == 'macOS'
-      run: cmake -B build -DCMAKE_PREFIX_PATH="${{ github.workspace }}/JUCE"
+      run: cmake -B build
 
     - name: Build Plugin
       run: cmake --build build --config Release
