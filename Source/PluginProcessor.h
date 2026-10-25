@@ -39,6 +39,12 @@ public:
 
 private:
     juce::dsp::StateVariableTPTFilter<float> filter;
+    
+    // Oscilador simples e variáveis de controlo MIDI
+    juce::dsp::Oscillator<float> oscillator { [] (float x) { return std::sin (x); }, 200 };
+    double currentSampleRate = 44100.0;
+    bool isPlaying = false;
+
     juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Electribe2HacktribeAudioProcessor)
