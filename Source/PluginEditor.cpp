@@ -1,51 +1,57 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-Electribe2HacktribeAudioProcessorEditor::Electribe2HacktribeAudioProcessorEditor (Electribe2HacktribeAudioProcessor& p)
+//==============================================================================
+Electribevst2AudioProcessorEditor::Electribevst2AudioProcessorEditor (Electribevst2AudioProcessor& p)
     : AudioProcessorEditor (&p), audioProcessor (p)
 {
-    setSize (600, 400);
-
-    // Cutoff Slider (Corrigido para o ID exato do Processor)
+    // Configuração do Slider de Cutoff
     cutoffSlider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
-    cutoffSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 50, 20);
+    cutoffSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 60, 20);
     addAndMakeVisible (cutoffSlider);
-    cutoffAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.apvts, "TRK_1_CUTOFF", cutoffSlider);
+    cutoffAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (
+        audioProcessor.apvts, "CUTOFF", cutoffSlider);
 
-    // Resonance Slider (Corrigido para o ID exato do Processor)
+    // Configuração do Slider de Resonance
     resonanceSlider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
-    resonanceSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 50, 20);
+    resonanceSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 60, 20);
     addAndMakeVisible (resonanceSlider);
-    resonanceAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.apvts, "TRK_1_RESONANCE", resonanceSlider);
+    resonanceAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (
+        audioProcessor.apvts, "RESONANCE", resonanceSlider);
 
-    // Mode Selector (Corrigido para o ID exato do Processor)
-    modeSelector.addItem ("Synth Engine", 1);
-    modeSelector.addItem ("User Sampler", 2);
-    addAndMakeVisible (modeSelector);
-    modeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (audioProcessor.apvts, "TRK_1_MODE", modeSelector);
+    // Configuração da Caixa de Modos do Filtro
+    modeBox.addItem ("Lowpass", 1);
+    modeBox.addItem ("Highpass", 2);
+    modeBox.addItem ("Bandpass", 3);
+    addAndMakeVisible (modeBox);
+    modeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (
+        audioProcessor.apvts, "MODE", modeBox);
+
+    setSize (400, 300);
 }
 
-Electribe2HacktribeAudioProcessorEditor::~Electribe2HacktribeAudioProcessorEditor()
+Electribevst2AudioProcessorEditor::~Electribevst2AudioProcessorEditor()
 {
 }
 
-void Electribe2HacktribeAudioProcessorEditor::paint (juce::Graphics& g)
+//==============================================================================
+void Electribevst2AudioProcessorEditor::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colours::darkgrey);
+    g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
 
     g.setColour (juce::Colours::white);
-    g.setFont (18.0f);
-    g.drawFittedText ("Electribe 2 / Hacktribe VST", getLocalBounds().removeFromTop(40), juce::Justification::centred, 1);
+    g.setFont (16.0f);
+    g.drawFittedText ("Electribe 2 Hacktribe", getLocalBounds().removeFromTop (40), juce::Justification::centred, 1);
 }
 
-void Electribe2HacktribeAudioProcessorEditor::resized()
+void Electribevst2AudioProcessorEditor::resized()
 {
-    auto area = getLocalBounds().reduced(20);
-    area.removeFromTop(40); // Espaço para o título
+    auto area = getLocalBounds().reduced (20);
+    area.removeFromTop (40);
 
-    auto sliderArea = area.removeFromTop(150);
-    cutoffSlider.setBounds (sliderArea.removeFromLeft(150));
-    resonanceSlider.setBounds (sliderArea.removeFromLeft(150));
+    auto topRow = area.removeFromTop (120);
+    cutoffSlider.setBounds (topRow.removeFromLeft (180));
+    resonanceSlider.setBounds (topRow.removeFromRight (180));
 
-    modeSelector.setBounds (area.removeFromTop(30).withSizeKeepingCentre(150, 30));
+    modeBox.setBounds (area.removeFromTop(40).reduced(40, 0));
 }
