@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.22)
 
 project(electribevst2 VERSION 0.1.0)
 
+# O JUCE 8 exige C++20 ativado obrigatoriamente
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 # Inclui a pasta do JUCE que é descarregada pelo GitHub Actions
 add_subdirectory(JUCE)
 
