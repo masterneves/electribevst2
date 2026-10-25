@@ -1,71 +1,130 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-Electribe2HacktribeAudioProcessor::Electribe2HacktribeAudioProcessor()
+//==============================================================================
+Electribevst2AudioProcessor::Electribevst2AudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
      : AudioProcessor (BusesProperties()
-                      #if ! JucePlugin_IsMidiEffect
-                       #if ! JucePlugin_IsSynth
-                        .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
-                       #endif
-                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
+                     #if ! JucePlugin_IsMidiEffect
+                      #if ! JucePlugin_IsSynth
+                       .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
                       #endif
-                      ),
-        apvts(*this, nullptr, "Parameters", createParameterLayout())
+                       .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
+                     #endif
+                       ),
+       apvts (*this, nullptr, "Parameters", createParameterLayout())
 #endif
 {
+    // Configuração da onda do oscilador (Onda dente de serra por defeito)
+    osc.initialise ([] (float x) { return std::sin (x); });
 }
 
-Electribe2HacktribeAudioProcessor::~Electribe2HacktribeAudioProcessor()
+Electribevst2AudioProcessor::~Electribevst2AudioProcessor()
 {
 }
 
-const juce::String Electribe2HacktribeAudioProcessor::getName() const
+//==============================================================================
+const juce::String Electribevst2AudioProcessor::getName() const
 {
     return JucePlugin_Name;
 }
 
-bool Electribe2HacktribeAudioProcessor::acceptsMidi() const { return true; }
-bool Electribe2HacktribeAudioProcessor::producesMidi() const { return false; }
-bool Electribe2HacktribeAudioProcessor::isMidiEffect() const { return false; }
-double Electribe2HacktribeAudioProcessor::getTailLengthSeconds() const { return 0.0; }
-
-int Electribe2HacktribeAudioProcessor::getNumPrograms() { return 1; }
-int Electribe2HacktribeAudioProcessor::getCurrentProgram() { return 0; }
-void Electribe2HacktribeAudioProcessor::setCurrentProgram (int index) {}
-const juce::String Electribe2HacktribeAudioProcessor::getProgramName (int index) { return {}; }
-void Electribe2HacktribeAudioProcessor::changeProgramName (int index, const juce::String& newName) {}
-
-void Electribe2HacktribeAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+bool Electribevst2AudioProcessor::acceptsMidi() const
 {
-    currentSampleRate = sampleRate;
+   #if JucePlugin_WantsMidiInput
+    return true;
+   #else
+    return false;
+   #endif
+}
 
+bool Electribevst2AudioProcessor::producesMidi() const
+{
+   #if JucePlugin_ProducesMidiOutput
+    return true;
+   #else
+    return false;
+   #endif
+}
+
+bool Electribevst2AudioProcessor::isMidiEffect() const
+{
+   #if JucePlugin_IsMidiEffect
+    return true;
+   #else
+    return false;
+   #endif
+}
+
+double Electribevst2AudioProcessor::getTailLengthSeconds() const
+{
+    return 0.0;
+}
+
+int Electribevst2AudioProcessor::getNumPrograms()
+{
+    return 1;   // NB: some hosts choose to think 0 means 1
+}
+
+int Electribevst2AudioProcessor::getCurrentProgram()
+{
+    return 0;
+}
+
+void Electribevst2AudioProcessor::setCurrentProgram (int index)
+{
+}
+
+const juce::String Electribevst2AudioProcessor::getProgramName (int index)
+{
+    return {};
+}
+
+void Electribevst2AudioProcessor::changeProgramName (int index, const juce::String& newName)
+{
+}
+
+//==============================================================================
+void Electribevst2AudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+{
     juce::dsp::ProcessSpec spec;
     spec.sampleRate = sampleRate;
-    spec.maximumBlockSize = (juce::uint32) samplesPerBlock;
-    spec.numChannels = (juce::uint32) getTotalNumOutputChannels();
+    spec.maximumBlockSize = static_cast<juce::uint32> (samplesPerBlock);
+    spec.numChannels = static_cast<juce::uint32> (getTotalNumOutputChannels());
 
-    oscillator.prepare(spec);
+    osc.prepare (spec);
+    filter.prepare (spec);
 
-    filter.reset();
-    filter.setType(juce::dsp::StateVariableTPTFilterType::lowpass);
-    filter.prepare(spec);
+    // Frequência de corte inicial do filtro TPT
+    filter.setType (juce::dsp::StateVariableTPTFilterType::lowpass);
 }
 
-void Electribe2HacktribeAudioProcessor::releaseResources()
+void Electribevst2AudioProcessor::releaseResources()
 {
 }
 
-bool Electribe2HacktribeAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+#ifndef JucePlugin_PreferredChannelConfigurations
+bool Electribevst2AudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
+  #if JucePlugin_IsMidiEffect
+    juce::ignoreUnused (layouts);
+    return true;
+  #else
     if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
      && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
         return false;
 
-    return true;
-}
+   #if ! JucePlugin_IsSynth
+    if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
+        return false;
+   #endif
 
-void Electribe2HacktribeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
+    return true;
+  #endif
+}
+#endif
+
+void Electribevst2AudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
@@ -74,93 +133,68 @@ void Electribe2HacktribeAudioProcessor::processBlock (juce::AudioBuffer<float>& 
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    // Processar mensagens MIDI (Note On / Note Off)
-    for (const auto metadata : midiMessages)
-    {
-        auto message = metadata.getMessage();
-        if (message.isNoteOn())
-        {
-            float frequency = (float) juce::MidiMessage::getMidiNoteInHertz(message.getNoteNumber());
-            oscillator.setFrequency(frequency);
-            isPlaying = true;
-        }
-        else if (message.isNoteOff())
-        {
-            isPlaying = false;
-        }
-    }
+    // Atualização dos parâmetros do APVTS
+    auto cutoff = apvts.getRawParameterValue ("CUTOFF")->load();
+    auto resonance = apvts.getRawParameterValue ("RESONANCE")->load();
 
-    juce::AudioBlock<float> block(buffer);
+    filter.setCutoffFrequency (cutoff);
+    filter.setResonance (resonance);
 
-    // Se estivermos a tocar uma nota, geramos o som do oscilador
-    if (isPlaying)
-    {
-        juce::dsp::ProcessContextReplacing<float> context(block);
-        oscillator.process(context);
-    }
-    else
-    {
-        buffer.clear();
-    }
+    // Processamento DSP correto
+    juce::dsp::AudioBlock<float> block (buffer);
+    juce::dsp::ProcessContextReplacing<float> context (block);
 
-    // Ler e aplicar os parâmetros do filtro (Cutoff, Resonance, Mode)
-    float cutoff = apvts.getRawParameterValue("TRK_1_CUTOFF")->load();
-    float resonance = apvts.getRawParameterValue("TRK_1_RESONANCE")->load();
-    int mode = (int) apvts.getRawParameterValue("TRK_1_MODE")->load();
-
-    if (mode == 0)
-        filter.setType(juce::dsp::StateVariableTPTFilterType::lowpass);
-    else if (mode == 1)
-        filter.setType(juce::dsp::StateVariableTPTFilterType::highpass);
-
-    filter.setCutoffFrequency(cutoff);
-    filter.setResonance(resonance);
-
-    juce::dsp::ProcessContextReplacing<float> filterContext(block);
-    filter.process(filterContext);
+    osc.process (context);
+    filter.process (context);
 }
 
-bool Electribe2HacktribeAudioProcessor::hasEditor() const { return true; }
-juce::AudioProcessorEditor* Electribe2HacktribeAudioProcessor::createEditor()
+//==============================================================================
+bool Electribevst2AudioProcessor::hasEditor() const
 {
-    return new Electribe2HacktribeAudioProcessorEditor (*this);
+    return true;
 }
 
-void Electribe2HacktribeAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
+juce::AudioProcessorEditor* Electribevst2AudioProcessor::createEditor()
 {
-    auto state = apvts.copyState();
-    std::unique_ptr<juce::XmlElement> xml (state.createXml());
-    copyXmlToBinary (*xml, destData);
+    return new Electribevst2AudioProcessorEditor (*this);
 }
 
-void Electribe2HacktribeAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
+//==============================================================================
+void Electribevst2AudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
-    std::unique_ptr<juce::XmlElement> xmlState (getXmlFromBinary (data, sizeInBytes));
-    if (xmlState.get() != nullptr)
-        if (xmlState->hasTagName (apvts.state.getType()))
-            apvts.replaceState (juce::ValueTree::fromXml (*xmlState));
 }
 
-juce::AudioProcessorValueTreeState::ParameterLayout Electribe2HacktribeAudioProcessor::createParameterLayout()
+void Electribevst2AudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-    std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
-
-    params.push_back (std::make_unique<juce::AudioParameterFloat> (
-        "TRK_1_CUTOFF", "Track 1 Cutoff",
-        juce::NormalisableRange<float> (20.0f, 20000.0f, 1.0f, 0.3f), 20000.0f));
-
-    params.push_back (std::make_unique<juce::AudioParameterFloat> (
-        "TRK_1_RESONANCE", "Track 1 Resonance",
-        juce::NormalisableRange<float> (0.1f, 10.0f, 0.05f), 0.707f));
-
-    params.push_back (std::make_unique<juce::AudioParameterChoice> (
-        "TRK_1_MODE", "Track 1 Mode",
-        juce::StringArray { "Low Pass", "High Pass" }, 0));
-
-    return { params.begin(), params.end() };
 }
 
+juce::AudioProcessorValueTreeState::ParameterLayout Electribevst2AudioProcessor::createParameterLayout()
+{
+    juce::AudioProcessorValueTreeState::ParameterLayout layout;
+
+    layout.add (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "CUTOFF", 1 },
+        "Cutoff",
+        juce::NormalisableRange<float> (20.0f, 20000.0f, 1.0f, 0.3f),
+        1000.0f));
+
+    layout.add (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "RESONANCE", 1 },
+        "Resonance",
+        juce::NormalisableRange<float> (0.1f, 10.0f, 0.05f),
+        1.0f));
+
+    layout.add (std::make_unique<juce::AudioParameterChoice> (
+        juce::ParameterID { "MODE", 1 },
+        "Mode",
+        juce::StringArray { "Lowpass", "Highpass", "Bandpass" },
+        0));
+
+    return layout;
+}
+
+//==============================================================================
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new Electribe2HacktribeAudioProcessor();
+    return new Electribevst2AudioProcessor();
 }
