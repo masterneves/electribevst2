@@ -1,6 +1,7 @@
 # Electribe 2 (Hacktribe OS Engine) VST3 / AU Plugin
 
 
+
 Um emulador/sintetizador VST3 e AU de 16 pistas inspirado na **Korg Electribe 2** rodando o firmware personalizado **Hacktribe OS**.
 
 ## 🚀 Funcionalidades
